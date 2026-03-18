@@ -56,6 +56,7 @@ export default function App() {
   const [customerAddress, setCustomerAddress] = useState('');
   const [deliveryMethod, setDeliveryMethod] = useState<'Nova Poshta' | 'DHL' | 'DPD'>('Nova Poshta');
   const [deliveryZone, setDeliveryZone] = useState<'local' | 'regional' | 'international'>('local');
+  const [currentStep, setCurrentStep] = useState(1);
   const [orderStatus, setOrderStatus] = useState<'idle' | 'processing' | 'success' | 'error'>('idle');
   const [adminOrders, setAdminOrders] = useState<Order[]>([]);
   const [rates, setRates] = useState<Record<string, number>>({ NOK: 1, EUR: 0.087, USD: 0.094, UAH: 3.7 });
@@ -357,18 +358,18 @@ export default function App() {
             animate={{ opacity: 1, y: 0 }}
             className="space-y-12"
           >
-            <div className="flex justify-between items-end">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
               <div>
-                <h1 className="text-4xl font-bold tracking-tight">Панель адміністратора</h1>
+                <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Панель адміністратора</h1>
                 <p className="text-stone-500 mt-2">Керуйте цінами та замовленнями</p>
               </div>
               <button onClick={() => setIsAdmin(false)} className="text-sm font-medium text-emerald-600 hover:underline">Повернутися на сайт</button>
             </div>
 
-            <div className="grid md:grid-rows-2 gap-8">
-              <div className="bg-white p-8 rounded-3xl border border-stone-200 shadow-sm space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="bg-white p-6 md:p-8 rounded-3xl border border-stone-200 shadow-sm space-y-6">
                 <h2 className="text-xl font-bold flex items-center gap-2"><SettingsIcon size={20} /> Налаштування цін</h2>
-                <div className="grid md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="text-xs font-bold uppercase tracking-wider text-stone-400">Базова ціна (30x30)</label>
                     <div className="flex items-center gap-4">
@@ -524,7 +525,7 @@ export default function App() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 }}
-                  className="text-6xl lg:text-8xl font-black tracking-tight leading-[0.9]"
+                  className="text-5xl sm:text-7xl lg:text-8xl font-black tracking-tight leading-[0.9]"
                 >
                   АЛМАЗНІ КАРТИНИ <span className="text-emerald-600">ПО ФОТО</span>
                 </motion.h1>
@@ -573,359 +574,511 @@ export default function App() {
             </section>
 
             {/* Order Form */}
-            <section id="order-form" className="bg-white rounded-[3rem] border border-stone-200 shadow-sm overflow-hidden grid lg:grid-cols-2">
-              <div className="p-12 space-y-10">
-                <div className="space-y-2">
-                  <h2 className="text-3xl font-bold tracking-tight">Налаштуйте замовлення</h2>
-                  <p className="text-stone-500">Виберіть розмір та завантажте зображення</p>
-                </div>
-
-                <div className="space-y-6">
-                  {/* VIP Pass Purchase Card */}
-                  <div 
-                    onClick={() => {
-                      setIsBuyingVipPass(!isBuyingVipPass);
-                      if (!isBuyingVipPass) setIsVipApplied(false);
-                    }}
-                    className={`p-6 rounded-3xl border-2 transition-all cursor-pointer relative overflow-hidden group ${
-                      isBuyingVipPass 
-                        ? 'border-purple-500 bg-purple-50 shadow-lg' 
-                        : 'border-stone-100 bg-stone-50 hover:border-purple-200'
-                    }`}
-                  >
-                    <div className="absolute top-0 right-0 p-4">
-                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isBuyingVipPass ? 'bg-purple-500 border-purple-500' : 'border-stone-300'}`}>
-                        {isBuyingVipPass && <Check size={14} className="text-white" />}
+            <section id="order-form" className="bg-white rounded-[2rem] md:rounded-[3rem] border border-stone-200 shadow-sm overflow-hidden">
+              <div className="grid lg:grid-cols-[1fr_400px]">
+                <div className="p-5 md:p-12 space-y-8 md:space-y-10">
+                  <div className="space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="space-y-1">
+                        <h2 className="text-xl md:text-3xl font-bold tracking-tight">Налаштуйте замовлення</h2>
+                        <p className="text-xs md:text-base text-stone-500 font-medium">Крок {currentStep} з 3: {
+                          currentStep === 1 ? 'Параметри' : currentStep === 2 ? 'Доставка' : 'Оплата'
+                        }</p>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-2xl flex items-center justify-center">
-                        <Star size={24} />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-lg">VIP Пропуск</h3>
-                        <p className="text-sm text-stone-500">{convert(1500)} {currency} • 1 картина безкоштовно</p>
-                      </div>
-                    </div>
-                    {isBuyingVipPass && (
-                      <motion.div 
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="mt-4 pt-4 border-t border-purple-200 text-xs text-purple-700 font-medium"
-                      >
-                        ✨ Після покупки ви отримаєте VIP статус та зможете замовити будь-яку картину безкоштовно!
-                      </motion.div>
-                    )}
-                  </div>
-
-                  {!isBuyingVipPass && (
-                    <div className="space-y-3">
-                      <label className="text-xs font-bold uppercase tracking-wider text-stone-400">1. Виберіть розмір</label>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                        {SIZES.map(size => (
-                          <button
-                            key={size.label}
-                            onClick={() => setSelectedSize(size)}
-                            className={`p-4 rounded-2xl border-2 transition-all text-sm font-bold ${
-                              selectedSize.label === size.label 
-                              ? 'border-emerald-600 bg-emerald-50 text-emerald-700' 
-                              : 'border-stone-100 hover:border-stone-200'
+                      <div className="flex gap-1.5">
+                        {[1, 2, 3].map((step) => (
+                          <div 
+                            key={step}
+                            className={`h-1.5 rounded-full transition-all duration-500 ${
+                              currentStep === step ? 'w-8 bg-emerald-600' : currentStep > step ? 'w-4 bg-emerald-400' : 'w-4 bg-stone-100'
                             }`}
-                          >
-                            {size.label}
-                          </button>
+                          />
                         ))}
                       </div>
                     </div>
-                  )}
-
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-end">
-                      <label className="text-xs font-bold uppercase tracking-wider text-stone-400">2. Валюта</label>
-                      {settings && (
-                        <span className="text-[10px] font-bold text-stone-400 uppercase tracking-tight">
-                          Базова ціна: {isBuyingVipPass ? 1500 : settings.basePrice} NOK
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap gap-3">
-                      {(['NOK', 'EUR', 'USD', 'UAH'] as Currency[]).map(curr => (
-                        <button
-                          key={curr}
-                          onClick={() => setCurrency(curr)}
-                          className={`min-w-[100px] px-6 py-4 rounded-2xl border-2 transition-all text-base font-bold ${
-                            currency === curr 
-                            ? 'border-stone-900 bg-stone-900 text-white shadow-lg' 
-                            : 'border-stone-100 bg-white text-stone-900 hover:border-stone-200'
-                          }`}
-                        >
-                          {curr}
-                        </button>
-                      ))}
-                    </div>
                   </div>
 
-                  <div className="space-y-3">
-                    <label className="text-xs font-bold uppercase tracking-wider text-stone-400">3. Статус замовлення</label>
-                    <button
-                      onClick={() => setIsPremiumSelected(!isPremiumSelected)}
-                      className={`w-full p-6 rounded-3xl border-2 transition-all flex items-center justify-between group ${
-                        isPremiumSelected 
-                        ? 'border-amber-500 bg-amber-50' 
-                        : 'border-stone-100 hover:border-stone-200'
-                      }`}
-                    >
-                      <div className="flex items-center gap-4 text-left">
-                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-colors ${isPremiumSelected ? 'bg-amber-500 text-white' : 'bg-stone-100 text-stone-400'}`}>
-                          <CreditCard size={24} />
-                        </div>
-                        <div>
-                          <p className={`font-bold ${isPremiumSelected ? 'text-amber-900' : 'text-stone-900'}`}>Преміум Статус</p>
-                          <p className="text-xs text-stone-500">Знижка 20% на перші 5 картин</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className={`text-lg font-black ${isPremiumSelected ? 'text-amber-600' : 'text-stone-400'}`}>+{convert(settings.premiumPrice)} {currency}</p>
-                        <p className="text-[10px] uppercase font-bold tracking-widest opacity-50">Одноразово</p>
-                      </div>
-                    </button>
-                  </div>
-
-                  <div className="space-y-3">
-                    <label className="text-xs font-bold uppercase tracking-wider text-stone-400">4. VIP Пропуск (Безкоштовно)</label>
-                    <div className="flex gap-2">
-                      <input 
-                        type="text"
-                        placeholder="Введіть VIP пароль"
-                        value={vipCode}
-                        onChange={(e) => setVipCode(e.target.value)}
-                        className="flex-1 p-4 bg-stone-50 border border-stone-200 rounded-2xl focus:ring-2 focus:ring-purple-500 outline-none font-mono"
-                      />
-                      <button 
-                        onClick={() => {
-                          if (vipCode === '200712') {
-                            setIsVipApplied(true);
-                            alert('VIP доступ активовано! Ваше замовлення безкоштовне.');
-                          } else {
-                            alert('Невірний VIP пароль');
-                          }
-                        }}
-                        className="px-6 bg-purple-600 text-white font-bold rounded-2xl hover:bg-purple-700 transition-colors"
+                  <AnimatePresence mode="wait">
+                    {currentStep === 1 && (
+                      <motion.div
+                        key="step1"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 20 }}
+                        className="space-y-8"
                       >
-                        ОК
-                      </button>
-                    </div>
-                    {isVipApplied && (
-                      <p className="text-xs text-purple-600 font-bold flex items-center gap-1">
-                        <Check size={14} /> VIP статус активовано: 1 картина безкоштовно
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-3">
-                    <label className="text-xs font-bold uppercase tracking-wider text-stone-400">{isBuyingVipPass ? '3. Дані для відправки' : '5. Дані для відправки'}</label>
-                    <div className="space-y-4">
-                      <input 
-                        type="text"
-                        placeholder="ПІБ отримувача"
-                        value={customerName}
-                        onChange={(e) => setCustomerName(e.target.value)}
-                        className="w-full p-4 bg-stone-50 border border-stone-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none"
-                      />
-                      <input 
-                        type="tel"
-                        placeholder="Номер телефону"
-                        value={customerPhone}
-                        onChange={(e) => setCustomerPhone(e.target.value)}
-                        className="w-full p-4 bg-stone-50 border border-stone-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none"
-                      />
-                      <Autocomplete
-                        apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}
-                        onPlaceSelected={(place) => {
-                          setCustomerAddress(place.formatted_address || '');
-                        }}
-                        options={{
-                          types: ["address"],
-                        }}
-                        defaultValue={customerAddress}
-                        placeholder="Введіть точну адресу (Пошук Google Maps)"
-                        className="w-full p-4 bg-stone-50 border border-stone-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none"
-                        onChange={(e: any) => setCustomerAddress(e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <label className="text-xs font-bold uppercase tracking-wider text-stone-400">{isBuyingVipPass ? '4. Спосіб доставки' : '6. Спосіб доставки'}</label>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      {[
-                        { id: 'Nova Poshta', label: 'Нова Пошта', icon: Package, price: 300 },
-                        { id: 'DHL', label: 'DHL Courier', icon: Truck, price: 500 },
-                        { id: 'DPD', label: 'DPD Courier', icon: Truck, price: 650 },
-                      ].map((method) => (
-                        <button
-                          key={method.id}
-                          onClick={() => setDeliveryMethod(method.id as any)}
-                          className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 ${
-                            deliveryMethod === method.id 
-                            ? 'border-emerald-600 bg-emerald-50 text-emerald-700' 
-                            : 'border-stone-100 hover:border-stone-200 text-stone-600'
-                          }`}
-                        >
-                          <method.icon size={20} />
-                          <div className="text-center">
-                            <span className="text-xs font-bold block">{method.label}</span>
-                            <span className="text-[10px] opacity-60">{convert(method.price)} {currency}</span>
+                        <div className="space-y-6">
+                          {/* VIP Pass Purchase Card */}
+                          <div 
+                            onClick={() => {
+                              setIsBuyingVipPass(!isBuyingVipPass);
+                              if (!isBuyingVipPass) setIsVipApplied(false);
+                            }}
+                            className={`p-6 rounded-3xl border-2 transition-all cursor-pointer relative overflow-hidden group ${
+                              isBuyingVipPass 
+                                ? 'border-purple-500 bg-purple-50 shadow-lg' 
+                                : 'border-stone-100 bg-stone-50 hover:border-purple-200'
+                            }`}
+                          >
+                            <div className="absolute top-0 right-0 p-4">
+                              <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isBuyingVipPass ? 'bg-purple-500 border-purple-500' : 'border-stone-300'}`}>
+                                {isBuyingVipPass && <Check size={14} className="text-white" />}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                              <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-2xl flex items-center justify-center">
+                                <Star size={24} />
+                              </div>
+                              <div>
+                                <h3 className="font-bold text-lg">VIP Пропуск</h3>
+                                <p className="text-sm text-stone-500">{convert(1500)} {currency} • 1 картина безкоштовно</p>
+                              </div>
+                            </div>
+                            {isBuyingVipPass && (
+                              <motion.div 
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="mt-4 pt-4 border-t border-purple-200 text-xs text-purple-700 font-medium"
+                              >
+                                ✨ Після покупки ви отримаєте VIP статус та зможете замовити будь-яку картину безкоштовно!
+                              </motion.div>
+                            )}
                           </div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
 
-                  {!isBuyingVipPass && (
-                    <div className="space-y-3">
-                      <label className="text-xs font-bold uppercase tracking-wider text-stone-400">7. Відстань (Додатковий збір)</label>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        {[
-                          { id: 'local', label: 'По місту', desc: `+${convert(50)} ${currency}` },
-                          { id: 'regional', label: 'По країні', desc: `+${convert(100)} ${currency}` },
-                          { id: 'international', label: 'За кордон', desc: `+${convert(300)} ${currency}` },
-                        ].map((zone) => (
-                          <button
-                            key={zone.id}
-                            onClick={() => setDeliveryZone(zone.id as any)}
-                            className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center text-center gap-1 ${
-                              deliveryZone === zone.id 
-                              ? 'border-emerald-600 bg-emerald-50 text-emerald-700' 
-                              : 'border-stone-100 hover:border-stone-200 text-stone-600'
-                            }`}
-                          >
-                            <span className="text-xs font-bold">{zone.label}</span>
-                            <span className="text-[10px] opacity-60">{zone.desc}</span>
-                          </button>
-                        ))}
-                      </div>
-                      <p className="text-[10px] text-stone-400 italic">
-                        * Преміум статус дає -20% на доставку. VIP пропуск — безкоштовно.
-                      </p>
-                    </div>
-                  )}
+                          {!isBuyingVipPass && (
+                            <div className="space-y-3">
+                            <label className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-stone-400">1. Виберіть розмір</label>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 md:gap-3">
+                              {SIZES.map(size => (
+                                <button
+                                  key={size.label}
+                                  onClick={() => setSelectedSize(size)}
+                                  className={`p-3 md:p-4 rounded-xl md:rounded-2xl border-2 transition-all text-xs md:text-sm font-bold ${
+                                    selectedSize.label === size.label 
+                                    ? 'border-emerald-600 bg-emerald-50 text-emerald-700' 
+                                    : 'border-stone-100 hover:border-stone-200'
+                                  }`}
+                                >
+                                  {size.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          )}
 
-                  {!isBuyingVipPass && (
-                    <div className="space-y-3">
-                      <label className="text-xs font-bold uppercase tracking-wider text-stone-400">8. Завантажте фото для картини</label>
-                      <div 
-                        {...photoDropzone.getRootProps()} 
-                        className={`border-2 border-dashed rounded-3xl p-8 transition-all flex flex-col items-center justify-center gap-4 cursor-pointer ${
-                          photoDropzone.isDragActive ? 'border-emerald-500 bg-emerald-50' : 'border-stone-200 hover:border-stone-300'
-                        }`}
-                      >
-                        <input {...photoDropzone.getInputProps()} />
-                        {previewUrl ? (
-                          <div className="relative w-full aspect-video rounded-xl overflow-hidden">
-                            <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
-                            <button 
-                              onClick={(e) => { e.stopPropagation(); setUploadedFile(null); setPreviewUrl(null); }}
-                              className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full hover:bg-black/70"
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-end">
+                              <label className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-stone-400">2. Валюта</label>
+                            </div>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 md:gap-3">
+                              {(['NOK', 'EUR', 'USD', 'UAH'] as Currency[]).map(curr => (
+                                <button
+                                  key={curr}
+                                  onClick={() => setCurrency(curr)}
+                                  className={`px-3 py-2.5 md:px-4 md:py-3 rounded-xl md:rounded-2xl border-2 transition-all text-xs md:text-sm font-bold ${
+                                    currency === curr 
+                                    ? 'border-stone-900 bg-stone-900 text-white shadow-lg' 
+                                    : 'border-stone-100 bg-white text-stone-900 hover:border-stone-200'
+                                  }`}
+                                >
+                                  {curr}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="space-y-3">
+                            <label className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-stone-400">3. Статус замовлення</label>
+                            <button
+                              onClick={() => setIsPremiumSelected(!isPremiumSelected)}
+                              className={`w-full p-4 md:p-6 rounded-2xl md:rounded-3xl border-2 transition-all flex items-center justify-between group ${
+                                isPremiumSelected 
+                                ? 'border-amber-500 bg-amber-50' 
+                                : 'border-stone-100 hover:border-stone-200'
+                              }`}
                             >
-                              <X size={16} />
+                              <div className="flex items-center gap-3 md:gap-4 text-left">
+                                <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center transition-colors ${isPremiumSelected ? 'bg-amber-500 text-white' : 'bg-stone-100 text-stone-400'}`}>
+                                  <CreditCard size={20} />
+                                </div>
+                                <div>
+                                  <p className={`font-bold text-sm md:text-base ${isPremiumSelected ? 'text-amber-900' : 'text-stone-900'}`}>Преміум Статус</p>
+                                  <p className="text-[10px] md:text-xs text-stone-500">Знижка 20% на перші 5 картин</p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className={`text-sm md:text-lg font-black ${isPremiumSelected ? 'text-amber-600' : 'text-stone-400'}`}>+{convert(settings.premiumPrice)} {currency}</p>
+                                <p className="text-[9px] md:text-[10px] uppercase font-bold tracking-widest opacity-50">Одноразово</p>
+                              </div>
                             </button>
                           </div>
-                        ) : (
-                          <>
-                            <div className="w-12 h-12 bg-stone-100 rounded-full flex items-center justify-center text-stone-400">
-                              <Upload size={24} />
+
+                          {!isBuyingVipPass && (
+                            <div className="space-y-3">
+                            <label className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-stone-400">4. Завантажте фото для картини</label>
+                            <div 
+                              {...photoDropzone.getRootProps()} 
+                              className={`border-2 border-dashed rounded-2xl md:rounded-3xl p-6 md:p-8 transition-all flex flex-col items-center justify-center gap-4 cursor-pointer ${
+                                photoDropzone.isDragActive ? 'border-emerald-500 bg-emerald-50' : 'border-stone-200 hover:border-stone-300'
+                              }`}
+                            >
+                              <input {...photoDropzone.getInputProps()} />
+                              {previewUrl ? (
+                                <div className="relative w-full aspect-video rounded-xl overflow-hidden shadow-inner bg-stone-100">
+                                  <img src={previewUrl} alt="Preview" className="w-full h-full object-contain" />
+                                  <button 
+                                    onClick={(e) => { e.stopPropagation(); setUploadedFile(null); setPreviewUrl(null); }}
+                                    className="absolute top-2 right-2 p-1.5 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors"
+                                  >
+                                    <X size={16} />
+                                  </button>
+                                </div>
+                              ) : (
+                                <>
+                                  <div className="w-10 h-10 md:w-12 md:h-12 bg-stone-100 rounded-full flex items-center justify-center text-stone-400">
+                                    <Upload size={20} />
+                                  </div>
+                                  <div className="text-center">
+                                    <p className="font-bold text-sm md:text-base">Натисніть або перетягніть</p>
+                                    <p className="text-[10px] md:text-xs text-stone-400">JPG, PNG до 10MB</p>
+                                  </div>
+                                </>
+                              )}
                             </div>
-                            <div className="text-center">
-                              <p className="font-bold">Натисніть або перетягніть</p>
-                              <p className="text-xs text-stone-400">JPG, PNG до 10MB</p>
+                          </div>
+                          )}
+                        </div>
+
+                        <div className="flex justify-between items-center">
+                          <div className="text-stone-400 text-xs font-medium lg:hidden">
+                            Разом: <span className="text-stone-900 font-bold">{calculatePrice(selectedSize.step)} {currency}</span>
+                          </div>
+                          <button 
+                            onClick={() => setCurrentStep(2)}
+                            disabled={!isBuyingVipPass && !uploadedFile}
+                            className="px-6 md:px-8 py-3 md:py-4 bg-emerald-600 text-white font-bold rounded-xl md:rounded-2xl hover:bg-emerald-700 disabled:opacity-50 transition-all flex items-center gap-2 shadow-lg shadow-emerald-100"
+                          >
+                            Далі <ChevronRight size={20} />
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {currentStep === 2 && (
+                      <motion.div
+                        key="step2"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        className="space-y-8"
+                      >
+                        <div className="space-y-6">
+                          <div className="space-y-3">
+                            <label className="text-xs font-bold uppercase tracking-wider text-stone-400">1. Дані отримувача</label>
+                            <div className="grid gap-4">
+                              <input 
+                                type="text"
+                                placeholder="ПІБ отримувача"
+                                value={customerName}
+                                onChange={(e) => setCustomerName(e.target.value)}
+                                className="w-full p-4 bg-stone-50 border border-stone-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none"
+                              />
+                              <input 
+                                type="tel"
+                                placeholder="Номер телефону"
+                                value={customerPhone}
+                                onChange={(e) => setCustomerPhone(e.target.value)}
+                                className="w-full p-4 bg-stone-50 border border-stone-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none"
+                              />
+                              {import.meta.env.VITE_GOOGLE_MAPS_API_KEY ? (
+                                <Autocomplete
+                                  apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}
+                                  onPlaceSelected={(place) => {
+                                    setCustomerAddress(place.formatted_address || '');
+                                  }}
+                                  options={{
+                                    types: ["address"],
+                                  }}
+                                  defaultValue={customerAddress}
+                                  placeholder="Введіть точну адресу (Пошук Google Maps)"
+                                  className="w-full p-4 bg-stone-50 border border-stone-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none"
+                                  onChange={(e: any) => setCustomerAddress(e.target.value)}
+                                />
+                              ) : (
+                                <input 
+                                  type="text"
+                                  placeholder="Введіть точну адресу"
+                                  value={customerAddress}
+                                  onChange={(e) => setCustomerAddress(e.target.value)}
+                                  className="w-full p-4 bg-stone-50 border border-stone-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none"
+                                />
+                              )}
                             </div>
-                          </>
+                          </div>
+
+                          <div className="space-y-3">
+                            <label className="text-xs font-bold uppercase tracking-wider text-stone-400">2. Спосіб доставки</label>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                              {[
+                                { id: 'Nova Poshta', label: 'Нова Пошта', icon: Package, price: 300 },
+                                { id: 'DHL', label: 'DHL Courier', icon: Truck, price: 500 },
+                                { id: 'DPD', label: 'DPD Courier', icon: Truck, price: 650 },
+                              ].map((method) => (
+                                <button
+                                  key={method.id}
+                                  onClick={() => setDeliveryMethod(method.id as any)}
+                                  className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 ${
+                                    deliveryMethod === method.id 
+                                    ? 'border-emerald-600 bg-emerald-50 text-emerald-700' 
+                                    : 'border-stone-100 hover:border-stone-200 text-stone-600'
+                                  }`}
+                                >
+                                  <method.icon size={20} />
+                                  <div className="text-center">
+                                    <span className="text-xs font-bold block">{method.label}</span>
+                                    <span className="text-[10px] opacity-60">{convert(method.price)} {currency}</span>
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="space-y-3">
+                            <label className="text-xs font-bold uppercase tracking-wider text-stone-400">3. Зона доставки</label>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                              {[
+                                { id: 'local', label: 'По місту', desc: `+${convert(50)} ${currency}` },
+                                { id: 'regional', label: 'По країні', desc: `+${convert(100)} ${currency}` },
+                                { id: 'international', label: 'За кордон', desc: `+${convert(300)} ${currency}` },
+                              ].map((zone) => (
+                                <button
+                                  key={zone.id}
+                                  onClick={() => setDeliveryZone(zone.id as any)}
+                                  className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center text-center gap-1 ${
+                                    deliveryZone === zone.id 
+                                    ? 'border-emerald-600 bg-emerald-50 text-emerald-700' 
+                                    : 'border-stone-100 hover:border-stone-200 text-stone-600'
+                                  }`}
+                                >
+                                  <span className="text-xs font-bold">{zone.label}</span>
+                                  <span className="text-[10px] opacity-60">{zone.desc}</span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex justify-between items-center">
+                          <button 
+                            onClick={() => setCurrentStep(1)}
+                            className="px-6 md:px-8 py-3 md:py-4 border-2 border-stone-100 font-bold rounded-xl md:rounded-2xl hover:bg-stone-50 transition-all text-sm md:text-base"
+                          >
+                            Назад
+                          </button>
+                          <div className="text-stone-400 text-xs font-medium lg:hidden">
+                            Разом: <span className="text-stone-900 font-bold">{calculatePrice(selectedSize.step)} {currency}</span>
+                          </div>
+                          <button 
+                            onClick={() => setCurrentStep(3)}
+                            disabled={!customerName || !customerPhone || !customerAddress}
+                            className="px-6 md:px-8 py-3 md:py-4 bg-emerald-600 text-white font-bold rounded-xl md:rounded-2xl hover:bg-emerald-700 disabled:opacity-50 transition-all flex items-center gap-2 shadow-lg shadow-emerald-100 text-sm md:text-base"
+                          >
+                            Далі <ChevronRight size={20} />
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {currentStep === 3 && (
+                      <motion.div
+                        key="step3"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        className="space-y-8"
+                      >
+                        <div className="space-y-6">
+                          <div className="space-y-3">
+                            <label className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-stone-400">1. VIP Пропуск (якщо є)</label>
+                            <div className="flex gap-2">
+                              <input 
+                                type="text"
+                                placeholder="Введіть VIP пароль"
+                                value={vipCode}
+                                onChange={(e) => setVipCode(e.target.value)}
+                                className="flex-1 p-3 md:p-4 bg-stone-50 border border-stone-200 rounded-xl md:rounded-2xl focus:ring-2 focus:ring-purple-500 outline-none font-mono text-sm"
+                              />
+                              <button 
+                                onClick={() => {
+                                  if (vipCode === (settings?.vipPassword || '200712')) {
+                                    setIsVipApplied(true);
+                                    alert('VIP доступ активовано! Ваше замовлення безкоштовне.');
+                                  } else {
+                                    alert('Невірний VIP пароль');
+                                  }
+                                }}
+                                className="px-4 md:px-6 bg-purple-600 text-white font-bold rounded-xl md:rounded-2xl hover:bg-purple-700 transition-colors text-sm"
+                              >
+                                ОК
+                              </button>
+                            </div>
+                            {isVipApplied && (
+                              <p className="text-[10px] md:text-xs text-purple-600 font-bold flex items-center gap-1">
+                                <Check size={14} /> VIP статус активовано: 1 картина безкоштовно
+                              </p>
+                            )}
+                          </div>
+
+                          {!isVipApplied && (
+                            <div className="space-y-6">
+                              <div className="p-5 md:p-6 bg-stone-900 rounded-2xl md:rounded-[2rem] text-white space-y-4">
+                                <div className="flex items-center gap-3">
+                                  <CreditCard className="text-emerald-500" size={20} />
+                                  <p className="font-bold text-sm md:text-base">Оплата через Revolut</p>
+                                </div>
+                                <p className="text-xs md:text-sm text-stone-400">Перекажіть <span className="text-white font-bold">{calculatePrice(selectedSize.step)} {currency}</span> на рахунок:</p>
+                                <div className="p-3 md:p-4 bg-white/5 border border-white/10 rounded-xl font-mono text-sm md:text-lg text-center select-all break-all">
+                                  {settings.bankAccount}
+                                </div>
+                              </div>
+
+                              <div className="space-y-3">
+                                <label className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-stone-400">2. Завантажте чек про оплату</label>
+                                <div 
+                                  {...receiptDropzone.getRootProps()} 
+                                  className={`border-2 border-dashed rounded-2xl md:rounded-3xl p-6 md:p-8 transition-all flex flex-col items-center justify-center gap-4 cursor-pointer ${
+                                    receiptDropzone.isDragActive ? 'border-emerald-500 bg-emerald-50' : 'border-stone-200 hover:border-stone-300'
+                                  }`}
+                                >
+                                  <input {...receiptDropzone.getInputProps()} />
+                                  {receiptPreviewUrl ? (
+                                    <div className="relative w-full aspect-video rounded-xl overflow-hidden shadow-inner bg-stone-100">
+                                      <img src={receiptPreviewUrl} alt="Receipt Preview" className="w-full h-full object-contain" />
+                                      <button 
+                                        onClick={(e) => { e.stopPropagation(); setReceiptFile(null); setReceiptPreviewUrl(null); }}
+                                        className="absolute top-2 right-2 p-1.5 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors"
+                                      >
+                                        <X size={16} />
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <>
+                                      <div className="w-10 h-10 md:w-12 md:h-12 bg-stone-100 rounded-full flex items-center justify-center text-stone-400">
+                                        <Upload size={20} />
+                                      </div>
+                                      <div className="text-center">
+                                        <p className="font-bold text-sm md:text-base">Натисніть або перетягніть чек</p>
+                                        <p className="text-[10px] md:text-xs text-stone-400">Скріншот оплати</p>
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex justify-between items-center">
+                          <button 
+                            onClick={() => setCurrentStep(2)}
+                            className="px-6 md:px-8 py-3 md:py-4 border-2 border-stone-100 font-bold rounded-xl md:rounded-2xl hover:bg-stone-50 transition-all text-sm md:text-base"
+                          >
+                            Назад
+                          </button>
+                          <div className="text-stone-400 text-xs font-medium lg:hidden">
+                            Разом: <span className="text-stone-900 font-bold">{calculatePrice(selectedSize.step)} {currency}</span>
+                          </div>
+                          <button 
+                            onClick={handleOrder}
+                            disabled={!isVipApplied && !receiptFile}
+                            className="px-6 md:px-8 py-3 md:py-4 bg-emerald-600 text-white font-bold rounded-xl md:rounded-2xl hover:bg-emerald-700 disabled:opacity-50 transition-all shadow-xl shadow-emerald-200 text-sm md:text-base"
+                          >
+                            Підтвердити замовлення
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* Order Summary Sidebar */}
+                <div className="bg-stone-900 p-6 md:p-12 text-white flex flex-col justify-between relative overflow-hidden lg:border-l lg:border-white/10">
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/20 blur-[100px] rounded-full -mr-32 -mt-32"></div>
+                  
+                  <div className="space-y-6 md:space-y-8 relative z-10">
+                    <div className="space-y-2">
+                      <h3 className="text-lg md:text-xl font-bold">Ваше замовлення</h3>
+                      <div className="h-1 w-12 bg-emerald-500 rounded-full"></div>
+                    </div>
+
+                    <div className="space-y-3 md:space-y-4">
+                      <div className="flex justify-between text-xs md:text-sm">
+                        <span className="text-stone-400">Тип:</span>
+                        <span className="font-bold">{isBuyingVipPass ? 'VIP Pass' : 'Алмазна картина'}</span>
+                      </div>
+                      {!isBuyingVipPass && (
+                        <div className="flex justify-between text-xs md:text-sm">
+                          <span className="text-stone-400">Розмір:</span>
+                          <span className="font-bold">{selectedSize.label}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-xs md:text-sm">
+                        <span className="text-stone-400">Доставка:</span>
+                        <span className="font-bold">{deliveryMethod}</span>
+                      </div>
+                      <div className="flex justify-between text-xs md:text-sm">
+                        <span className="text-stone-400">Статус:</span>
+                        <span className="font-bold">{isPremiumSelected ? 'Premium' : 'Standard'}</span>
+                      </div>
+                      
+                      <div className="pt-4 border-t border-white/10 space-y-2">
+                        <div className="flex justify-between items-baseline">
+                          <span className="text-stone-400 text-xs md:text-sm">Разом:</span>
+                          <div className="text-right">
+                            <div className="text-2xl md:text-3xl font-black text-emerald-400">
+                              {calculatePrice(selectedSize.step)} {currency}
+                            </div>
+                            {(isPromoActive || isPremiumSelected || isVipApplied) && (
+                              <div className="text-xs md:text-sm text-stone-500 line-through">
+                                {getOriginalPrice(selectedSize.step)} {currency}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        {currency !== 'NOK' && (
+                          <p className="text-[9px] md:text-[10px] text-stone-500 text-right uppercase tracking-wider">
+                            ≈ {calculateNokPrice(selectedSize.step)} NOK
+                          </p>
                         )}
                       </div>
                     </div>
-                  )}
-                </div>
 
-                <div className="pt-8 border-t border-stone-100 flex flex-col sm:flex-row sm:items-end justify-between gap-8">
-                  <div className="space-y-4 flex-1">
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-400">Підсумок замовлення</p>
-                      <div className="flex flex-col">
-                        <div className="flex items-baseline gap-3">
-                          <span className="text-sm text-stone-500 font-medium">Ціна:</span>
-                          <span className="text-sm font-bold text-stone-900">{calculateNokPrice(selectedSize.step)} NOK</span>
-                        </div>
-                        <div className="flex items-baseline gap-3 mt-1">
-                          <span className="text-sm text-stone-500 font-medium">Разом:</span>
-                          <span className="text-4xl font-black text-emerald-600">
-                            {convert(calculateNokPrice(selectedSize.step))} {currency}
-                          </span>
-                          {(isPromoActive || isPremiumSelected || isVipApplied) && (
-                            <span className="text-lg text-stone-300 line-through font-medium">
-                              {getOriginalPrice(selectedSize.step)} {currency}
-                            </span>
-                          )}
-                        </div>
+                    <div className="space-y-4 md:space-y-6 pt-6 md:pt-8">
+                      <h4 className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-stone-500">Чому обирають нас?</h4>
+                      <div className="space-y-3 md:space-y-4">
+                        {[
+                          { title: 'Преміум якість', desc: 'Найкращі акрилові стрази.' },
+                          { title: 'Швидка доставка', desc: 'Відправка протягом 3-5 днів.' },
+                        ].map((item, i) => (
+                          <div key={i} className="flex gap-3">
+                            <div className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-500 flex-shrink-0 flex items-center justify-center text-[10px] font-bold">{i+1}</div>
+                            <div>
+                              <p className="text-[10px] md:text-xs font-bold">{item.title}</p>
+                              <p className="text-[9px] md:text-[10px] text-stone-400">{item.desc}</p>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
-
-                    <div className="space-y-1">
-                      {ratesError && (
-                        <p className="text-[10px] text-amber-600 font-bold flex items-center gap-1">
-                          ⚠️ {ratesError}
-                        </p>
-                      )}
-                      {ratesTimestamp && (
-                        <p className="text-[10px] text-stone-400 font-medium">
-                          Курс актуальний на: <span className="text-stone-500">{ratesTimestamp}</span>
-                        </p>
-                      )}
-                    </div>
                   </div>
-                  
-                  <button 
-                    onClick={handleOrder}
-                    disabled={!isBuyingVipPass && !uploadedFile}
-                    className={`px-12 py-5 text-white font-bold rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-2xl hover:scale-[1.02] active:scale-[0.98] ${
-                      isBuyingVipPass 
-                        ? 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200' 
-                        : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-200'
-                    }`}
-                  >
-                    {isBuyingVipPass ? 'Придбати VIP Pass' : 'Оформити замовлення'}
-                  </button>
-                </div>
-              </div>
 
-              <div className="bg-stone-900 p-12 text-white flex flex-col justify-between relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/20 blur-[100px] rounded-full -mr-32 -mt-32"></div>
-                
-                <div className="space-y-8 relative z-10">
-                  <h3 className="text-2xl font-bold">Чому обирають нас?</h3>
-                  <div className="space-y-6">
-                    {[
-                      { title: 'Преміум якість', desc: 'Використовуємо лише найкращі акрилові стрази.' },
-                      { title: 'Швидка доставка', desc: 'Відправляємо по всьому світу протягом 3-5 днів.' },
-                      { title: 'Повна комплектація', desc: 'У наборі є все необхідне для початку роботи.' },
-                    ].map((item, i) => (
-                      <div key={i} className="flex gap-4">
-                        <div className="w-6 h-6 rounded-full bg-emerald-500 flex-shrink-0 flex items-center justify-center text-stone-900 font-bold text-xs">{i+1}</div>
-                        <div>
-                          <p className="font-bold">{item.title}</p>
-                          <p className="text-stone-400 text-sm">{item.desc}</p>
-                        </div>
-                      </div>
-                    ))}
+                  <div className="mt-8 md:mt-12 space-y-2 relative z-10">
+                    {ratesTimestamp && (
+                      <p className="text-[9px] md:text-[10px] text-stone-500 text-center">
+                        Курс актуальний на: {ratesTimestamp}
+                      </p>
+                    )}
                   </div>
-                </div>
-
-                <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-4 relative z-10">
-                  <div className="flex items-center gap-3">
-                    <CreditCard className="text-emerald-500" />
-                    <p className="font-bold">Оплата тільки через Revolut</p>
-                  </div>
-                  <p className="text-sm text-stone-400">Ми приймаємо платежі на Revolut: <br/><span className="text-white font-mono">{settings.bankAccount}</span></p>
                 </div>
               </div>
             </section>
@@ -939,12 +1092,12 @@ export default function App() {
             </section>
 
             {/* Technical Specification */}
-            <section className="max-w-3xl mx-auto p-8 bg-stone-50 rounded-[2rem] border border-stone-200 space-y-4">
+            <section className="max-w-3xl mx-auto p-8 bg-stone-50 rounded-[2rem] border border-stone-200 space-y-4 text-center">
               <h3 className="text-lg font-bold flex items-center gap-2 justify-center">
                 <Globe size={18} className="text-emerald-600" />
                 Технічна специфікація розрахунку
               </h3>
-              <p className="text-sm text-stone-600 leading-relaxed italic text-center">
+              <p className="text-sm text-stone-600 leading-relaxed italic">
                 "Для розрахунку ціни на сайті реалізовано динамічний обмін валют за поточним курсом банку. Базова ціна перераховується у вибрану валюту відповідно до актуального курсу. Для цього підключено API курсу валют. При виборі користувачем валюти (євро, долар, гривня) підсумкова сума перераховується відповідно до курсу на момент оплати. Перерахунок є динамічним, відображається в реальному часі та зрозумілий користувачеві. Відображається вибрана валюта та актуальна сума в ній, виходячи з курсу банку."
               </p>
             </section>
@@ -1007,13 +1160,13 @@ export default function App() {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="relative bg-white p-10 rounded-[3rem] shadow-2xl w-full max-w-xl space-y-8"
+              className="relative bg-white p-6 md:p-10 rounded-[2rem] md:rounded-[3rem] shadow-2xl w-full max-w-xl space-y-6 md:space-y-8 overflow-y-auto max-h-[90vh]"
             >
               {orderStatus === 'idle' && (
                 <>
-                  <div className="space-y-4">
-                    <h3 className="text-3xl font-bold">Оплата через Revolut</h3>
-                    <p className="text-stone-500">
+                  <div className="space-y-3 md:space-y-4">
+                    <h3 className="text-2xl md:text-3xl font-bold">Оплата через Revolut</h3>
+                    <p className="text-sm md:text-base text-stone-500">
                       Для завершення замовлення перекажіть{' '}
                       <span className="text-stone-900 font-bold">
                         {calculatePrice(selectedSize.step)} {currency}
@@ -1021,49 +1174,49 @@ export default function App() {
                       </span>{' '}
                       {isPromoActive && <span className="text-xs text-emerald-600 font-bold">(з урахуванням знижки 10%)</span>} на наш Revolut:
                     </p>
-                    <div className="p-6 bg-stone-50 rounded-2xl border border-stone-200 font-mono text-lg text-center select-all">
+                    <div className="p-4 md:p-6 bg-stone-50 rounded-xl md:rounded-2xl border border-stone-200 font-mono text-sm md:text-lg text-center select-all break-all">
                       {settings.bankAccount}
                     </div>
                   </div>
                   
-                  <div className="space-y-4">
-                    <label className="text-xs font-bold uppercase tracking-wider text-stone-400">Завантажте чек про оплату (Screenshot)</label>
+                  <div className="space-y-3 md:space-y-4">
+                    <label className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-stone-400">Завантажте чек про оплату (Screenshot)</label>
                     <div 
                       {...receiptDropzone.getRootProps()} 
-                      className={`border-2 border-dashed rounded-2xl p-6 transition-all flex flex-col items-center justify-center gap-2 cursor-pointer ${
+                      className={`border-2 border-dashed rounded-xl md:rounded-2xl p-4 md:p-6 transition-all flex flex-col items-center justify-center gap-2 cursor-pointer ${
                         receiptDropzone.isDragActive ? 'border-emerald-500 bg-emerald-50' : 'border-stone-200 hover:border-stone-300'
                       }`}
                     >
                       <input {...receiptDropzone.getInputProps()} />
                       {receiptPreviewUrl ? (
-                        <div className="flex items-center gap-3 text-emerald-600 font-bold">
+                        <div className="flex items-center gap-3 text-emerald-600 font-bold text-sm">
                           <CheckCircle size={20} /> Чек завантажено
                         </div>
                       ) : (
                         <>
                           <Upload size={20} className="text-stone-400" />
-                          <p className="text-sm font-bold">Натисніть, щоб додати чек</p>
+                          <p className="text-xs md:text-sm font-bold">Натисніть, щоб додати чек</p>
                         </>
                       )}
                     </div>
                   </div>
 
                   <div className="space-y-4">
-                    <div className="flex items-center gap-3 p-4 bg-emerald-50 text-emerald-700 rounded-xl text-sm">
-                      <CheckCircle size={18} />
+                    <div className="flex items-center gap-3 p-3 md:p-4 bg-emerald-50 text-emerald-700 rounded-xl text-xs md:text-sm">
+                      <CheckCircle size={18} className="flex-shrink-0" />
                       <p>Наш Бот автоматично перевірить чек перед відправкою.</p>
                     </div>
-                    <div className="flex gap-3">
+                    <div className="flex flex-col sm:flex-row gap-3">
                       <button 
                         onClick={() => setIsPaying(false)}
-                        className="flex-1 py-4 border-2 border-stone-100 font-bold rounded-xl hover:bg-stone-50 transition-all"
+                        className="flex-1 py-3 md:py-4 border-2 border-stone-100 font-bold rounded-xl hover:bg-stone-50 transition-all text-sm md:text-base"
                       >
                         Скасувати
                       </button>
                       <button 
                         onClick={confirmPayment}
                         disabled={!receiptFile}
-                        className="flex-1 py-4 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 disabled:opacity-50 transition-all shadow-lg shadow-emerald-200"
+                        className="flex-1 py-3 md:py-4 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 disabled:opacity-50 transition-all shadow-lg shadow-emerald-200 text-sm md:text-base"
                       >
                         Підтвердити оплату
                       </button>
@@ -1129,7 +1282,7 @@ export default function App() {
 
       {/* Footer */}
       <footer className="bg-white border-t border-stone-200 px-6 py-12 mt-24">
-        <div className="max-w-7xl mx-auto grid md:grid-cols-3 gap-12">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-12">
           <div className="space-y-4">
             <div className="text-xl font-black tracking-tighter text-emerald-600 uppercase">Світ краси</div>
             <p className="text-sm text-stone-500">Ваш преміум сервіс алмазного живопису по всьому світу.</p>
@@ -1138,9 +1291,9 @@ export default function App() {
             <h4 className="font-bold">Контакти</h4>
             <p className="text-sm text-stone-500">{settings.contactEmail}</p>
           </div>
-          <div className="space-y-4">
+          <div className="space-y-4 sm:col-span-2 lg:col-span-1">
             <h4 className="font-bold">Рахунок для оплати</h4>
-            <p className="text-sm font-mono text-stone-500">{settings.bankAccount}</p>
+            <p className="text-sm font-mono text-stone-500 break-all">{settings.bankAccount}</p>
           </div>
         </div>
         <div className="max-w-7xl mx-auto pt-12 mt-12 border-t border-stone-100 text-center text-xs text-stone-400">
