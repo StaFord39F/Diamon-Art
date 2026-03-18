@@ -1,0 +1,5 @@
+{
+  "name": "Kilo Kode - Diamond Art",
+  "description": "Premium diamond painting store with custom photo uploads and global shipping.",
+  "requestFramePermissions": ["camera", "microphone"]
+}
