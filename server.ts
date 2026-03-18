@@ -15,6 +15,14 @@ const PORT = 3000;
 
 // Middleware
 app.use(express.json());
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    console.log(`${new Date().toISOString()} ${req.method} ${req.url} ${res.statusCode} - ${duration}ms`);
+  });
+  next();
+});
 
 // Storage for orders and settings (in-memory for this demo)
 let settings = {
@@ -42,7 +50,7 @@ if (!fs.existsSync(uploadDir)) {
 const upload = multer({ dest: "uploads/" });
 
 // API Routes
-app.get("/api/settings", (req, res) => {
+app.get(["/api/settings", "/api/settings/"], (req, res) => {
   const { adminPassword, vipPassword, ...publicSettings } = settings;
   res.json({
     ...publicSettings,
@@ -213,6 +221,11 @@ app.post("/api/orders", upload.fields([{ name: 'photo', maxCount: 1 }, { name: '
   }
 
   res.json({ success: true, orderId: newOrder.id });
+});
+
+// Catch-all for API routes to prevent returning HTML
+app.all("/api/*", (req, res) => {
+  res.status(404).json({ success: false, message: `API route ${req.method} ${req.url} not found` });
 });
 
 // Vite middleware for development

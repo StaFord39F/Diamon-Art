@@ -1,5 +1,5 @@
 {
-  "name": "Kilo Kode - Diamond Art",
-  "description": "Premium diamond painting store with custom photo uploads and global shipping.",
+  "name": "Світ краси - Алмазний живопис",
+  "description": "Створюємо шедеври з ваших фотографій. Алмазний живопис преміум якості з доставкою по всьому світу.",
   "requestFramePermissions": ["camera", "microphone"]
 }

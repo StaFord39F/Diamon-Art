@@ -92,8 +92,24 @@ export default function App() {
   // Fetch settings
   useEffect(() => {
     fetch('/api/settings')
-      .then(res => res.json())
-      .then(data => setSettings(data));
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to fetch settings');
+        return res.json();
+      })
+      .then(data => setSettings(data))
+      .catch(err => {
+        console.error('Error fetching settings:', err);
+        // Fallback settings to prevent infinite loading or broken UI
+        setSettings({
+          basePrice: 250,
+          stepPrice: 450,
+          premiumPrice: 250,
+          aboutUs: "Ми — Світ краси, ваш надійний партнер у світі алмазного живопису.",
+          paymentMethod: "Revolut",
+          orderCount: 0,
+          hasVip: true
+        } as any);
+      });
   }, []);
 
   // Fetch orders and full settings if admin
@@ -301,7 +317,12 @@ export default function App() {
     }
   };
 
-  if (!settings) return <div className="flex items-center justify-center h-screen bg-stone-50">Завантаження...</div>;
+  if (!settings) return (
+    <div className="flex flex-col items-center justify-center h-screen bg-stone-50 gap-4">
+      <div className="text-6xl animate-bounce">💎</div>
+      <div className="text-stone-400 font-medium animate-pulse">Завантаження...</div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-stone-50 text-stone-900 font-sans selection:bg-emerald-100">
@@ -314,7 +335,10 @@ export default function App() {
 
       {/* Navigation */}
       <nav className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-stone-200 px-6 py-4 flex justify-between items-center">
-        <div className="text-2xl font-black tracking-tighter text-emerald-600 uppercase">Світ краси</div>
+        <div className="text-2xl font-black tracking-tighter text-emerald-600 uppercase flex items-center gap-2">
+          <span>💎</span>
+          <span>Світ краси</span>
+        </div>
         <div className="flex items-center gap-6">
           <button onClick={() => document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' })} className="text-sm font-medium hover:text-emerald-600 transition-colors">Про нас</button>
           <button 
