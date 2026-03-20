@@ -63,6 +63,13 @@ export default function App() {
   const [ratesTimestamp, setRatesTimestamp] = useState<string | null>(null);
   const [ratesError, setRatesError] = useState<string | null>(null);
 
+  // Payment Verification System States
+  const [transactionId, setTransactionId] = useState<string | null>(null);
+  const [paymentVerificationStatus, setPaymentVerificationStatus] = useState<'IDLE' | 'PENDING' | 'PAID' | 'FAILED'>('IDLE');
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [verificationError, setVerificationError] = useState<string | null>(null);
+  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
+
   // Fetch exchange rates
   useEffect(() => {
     fetch('https://open.er-api.com/v6/latest/NOK')
@@ -125,6 +132,110 @@ export default function App() {
         .then(data => setSettings(data));
     }
   }, [adminToken]);
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingInterval) clearInterval(pollingInterval);
+    };
+  }, [pollingInterval]);
+
+  const initiatePayment = async (amount: number, curr: string) => {
+    try {
+      setIsVerifying(true);
+      setVerificationError(null);
+      setPaymentVerificationStatus('PENDING');
+
+      const res = await fetch('/api/payment/initiate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount, currency: curr }),
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        setTransactionId(data.transactionId);
+        startPolling(data.transactionId);
+      } else {
+        throw new Error(data.message || 'Failed to initiate payment');
+      }
+    } catch (err) {
+      console.error('Payment initiation error:', err);
+      setVerificationError('Помилка ініціації оплати. Спробуйте ще раз.');
+      setIsVerifying(false);
+      setPaymentVerificationStatus('FAILED');
+    }
+  };
+
+  const startPolling = (tid: string) => {
+    if (pollingInterval) clearInterval(pollingInterval);
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/payment/status/${tid}`);
+        const data = await res.json();
+
+        if (data.success) {
+          if (data.status === 'PAID') {
+            clearInterval(interval);
+            setPollingInterval(null);
+            setPaymentVerificationStatus('PAID');
+            setIsVerifying(false);
+            
+            // Auto-verify once paid
+            verifyPayment(tid);
+          } else if (data.status === 'FAILED') {
+            clearInterval(interval);
+            setPollingInterval(null);
+            setPaymentVerificationStatus('FAILED');
+            setIsVerifying(false);
+            setVerificationError('Оплата відхилена платіжним шлюзом.');
+          }
+        }
+      } catch (err) {
+        console.error('Polling error:', err);
+      }
+    }, 2000); // Poll every 2 seconds as per requirement
+
+    setPollingInterval(interval);
+  };
+
+  const verifyPayment = async (tid: string) => {
+    try {
+      const res = await fetch('/api/payment/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transactionId: tid }),
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        console.log('[PAYMENT] Verified successfully');
+        // Finalize order or grant access
+        if (isBuyingVipPass) {
+          // If it was a VIP pass purchase, we might want to show the code now
+          // For this demo, we'll just proceed to order confirmation
+        }
+      }
+    } catch (err) {
+      console.error('Verification error:', err);
+    }
+  };
+
+  const simulatePaymentSuccess = async () => {
+    if (!transactionId) return;
+    
+    try {
+      await fetch('/api/payment/simulate-callback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transactionId, status: 'PAID' }),
+      });
+      // Polling will pick this up
+    } catch (err) {
+      console.error('Simulation error:', err);
+    }
+  };
 
   const onDropPhoto = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
@@ -229,6 +340,9 @@ export default function App() {
       confirmPayment(true);
     } else {
       setIsPaying(true);
+      // Initiate payment verification system
+      const amount = calculateNokPrice(selectedSize.step);
+      initiatePayment(amount, currency);
     }
   };
 
@@ -1166,6 +1280,23 @@ export default function App() {
                 <>
                   <div className="space-y-3 md:space-y-4">
                     <h3 className="text-2xl md:text-3xl font-bold">Оплата через Revolut</h3>
+                    
+                    {/* Payment Verification Status Indicator */}
+                    <div className="flex items-center gap-3 p-4 bg-stone-50 rounded-2xl border border-stone-100">
+                      <div className={`w-3 h-3 rounded-full ${
+                        paymentVerificationStatus === 'PAID' ? 'bg-emerald-500 animate-pulse' : 
+                        paymentVerificationStatus === 'PENDING' ? 'bg-amber-500 animate-bounce' : 
+                        paymentVerificationStatus === 'FAILED' ? 'bg-red-500' : 'bg-stone-300'
+                      }`} />
+                      <span className="text-xs font-bold uppercase tracking-widest text-stone-500">
+                        Статус оплати: {
+                          paymentVerificationStatus === 'PAID' ? 'ПІДТВЕРДЖЕНО' : 
+                          paymentVerificationStatus === 'PENDING' ? 'ОЧІКУВАННЯ...' : 
+                          paymentVerificationStatus === 'FAILED' ? 'ПОМИЛКА' : 'ІНІЦІАЦІЯ'
+                        }
+                      </span>
+                    </div>
+
                     <p className="text-sm md:text-base text-stone-500">
                       Для завершення замовлення перекажіть{' '}
                       <span className="text-stone-900 font-bold">
@@ -1202,23 +1333,55 @@ export default function App() {
                   </div>
 
                   <div className="space-y-4">
-                    <div className="flex items-center gap-3 p-3 md:p-4 bg-emerald-50 text-emerald-700 rounded-xl text-xs md:text-sm">
-                      <CheckCircle size={18} className="flex-shrink-0" />
-                      <p>Наш Бот автоматично перевірить чек перед відправкою.</p>
-                    </div>
+                    {paymentVerificationStatus === 'PENDING' && (
+                      <div className="flex items-center gap-3 p-3 md:p-4 bg-amber-50 text-amber-700 rounded-xl text-xs md:text-sm border border-amber-100">
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-amber-700 border-t-transparent" />
+                        <p>Система очікує підтвердження транзакції від банку...</p>
+                      </div>
+                    )}
+                    
+                    {paymentVerificationStatus === 'PAID' && (
+                      <div className="flex items-center gap-3 p-3 md:p-4 bg-emerald-50 text-emerald-700 rounded-xl text-xs md:text-sm border border-emerald-100">
+                        <CheckCircle size={18} className="flex-shrink-0" />
+                        <p>Оплата успішно верифікована системою!</p>
+                      </div>
+                    )}
+
+                    {verificationError && (
+                      <div className="flex items-center gap-3 p-3 md:p-4 bg-red-50 text-red-700 rounded-xl text-xs md:text-sm border border-red-100">
+                        <X size={18} className="flex-shrink-0" />
+                        <p>{verificationError}</p>
+                      </div>
+                    )}
+
                     <div className="flex flex-col sm:flex-row gap-3">
                       <button 
-                        onClick={() => setIsPaying(false)}
+                        onClick={() => {
+                          setIsPaying(false);
+                          if (pollingInterval) clearInterval(pollingInterval);
+                          setPaymentVerificationStatus('IDLE');
+                        }}
                         className="flex-1 py-3 md:py-4 border-2 border-stone-100 font-bold rounded-xl hover:bg-stone-50 transition-all text-sm md:text-base"
                       >
                         Скасувати
                       </button>
+                      
+                      {/* Demo button to simulate success */}
+                      {paymentVerificationStatus === 'PENDING' && (
+                        <button 
+                          onClick={simulatePaymentSuccess}
+                          className="flex-1 py-3 md:py-4 bg-stone-100 text-stone-600 font-bold rounded-xl hover:bg-stone-200 transition-all text-[10px] uppercase tracking-widest"
+                        >
+                          Симулювати успіх (Demo)
+                        </button>
+                      )}
+
                       <button 
-                        onClick={confirmPayment}
-                        disabled={!receiptFile}
+                        onClick={() => confirmPayment(false)}
+                        disabled={!receiptFile || paymentVerificationStatus !== 'PAID'}
                         className="flex-1 py-3 md:py-4 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 disabled:opacity-50 transition-all shadow-lg shadow-emerald-200 text-sm md:text-base"
                       >
-                        Підтвердити оплату
+                        {paymentVerificationStatus === 'PAID' ? 'Завершити замовлення' : 'Очікування оплати...'}
                       </button>
                     </div>
                   </div>

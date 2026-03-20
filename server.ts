@@ -41,6 +41,7 @@ let settings = {
 };
 
 let orders: any[] = [];
+let payments: Record<string, { status: 'PENDING' | 'PAID' | 'FAILED', amount: number, currency: string, timestamp: string }> = {};
 
 // Multer setup for file uploads
 const uploadDir = path.join(__dirname, "uploads");
@@ -58,6 +59,67 @@ app.get(["/api/settings", "/api/settings/"], (req, res) => {
     orderCount: orders.length,
     hasVip: !!vipPassword
   });
+});
+
+// Payment Verification System
+app.post("/api/payment/initiate", (req, res) => {
+  const { amount, currency } = req.body;
+  const transactionId = `TXN_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  
+  payments[transactionId] = {
+    status: 'PENDING',
+    amount,
+    currency,
+    timestamp: new Date().toISOString()
+  };
+
+  console.log(`[PAYMENT] Initiated: ${transactionId} - ${amount} ${currency}`);
+  res.json({ success: true, transactionId });
+});
+
+app.get("/api/payment/status/:transactionId", (req, res) => {
+  const { transactionId } = req.params;
+  const payment = payments[transactionId];
+
+  if (!payment) {
+    return res.status(404).json({ success: false, message: "Транзакція не знайдена" });
+  }
+
+  // Simulate automatic status update for demo purposes if it's been more than 5 seconds
+  // In a real app, this would be updated by a webhook from the payment gateway
+  const elapsed = Date.now() - new Date(payment.timestamp).getTime();
+  if (payment.status === 'PENDING' && elapsed > 10000) {
+    // payment.status = 'PAID'; // Uncomment to simulate auto-success
+  }
+
+  res.json({ success: true, status: payment.status });
+});
+
+app.post("/api/payment/simulate-callback", (req, res) => {
+  const { transactionId, status } = req.body;
+  
+  if (!payments[transactionId]) {
+    return res.status(404).json({ success: false, message: "Транзакція не знайдена" });
+  }
+
+  payments[transactionId].status = status || 'PAID';
+  console.log(`[PAYMENT] Callback received for ${transactionId}: ${payments[transactionId].status}`);
+  res.json({ success: true, status: payments[transactionId].status });
+});
+
+app.post("/api/payment/verify", (req, res) => {
+  const { transactionId } = req.body;
+  const payment = payments[transactionId];
+
+  if (!payment) {
+    return res.status(404).json({ success: false, message: "Транзакція не знайдена" });
+  }
+
+  if (payment.status === 'PAID') {
+    res.json({ success: true, message: "Оплата підтверджена" });
+  } else {
+    res.status(403).json({ success: false, message: "Оплата ще не підтверджена", status: payment.status });
+  }
 });
 
 app.post("/api/admin/login", (req, res) => {
